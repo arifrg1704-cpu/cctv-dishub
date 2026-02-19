@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: cctv_pontianak_web
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=${DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key-change-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DB_NAME=${DB_NAME:-cctv_pontianak}
+      - DB_USER=${DB_USER:-dishub_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-dishub_password_123}
+      - DB_HOST=db
+      - DB_PORT=3306
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_data --skip-existing &&
+             gunicorn --bind 0.0.0.0:8000 cctv_pontianak.wsgi:application"
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: cctv_pontianak_db
+    environment:
+      - MYSQL_DATABASE=${DB_NAME:-cctv_pontianak}
+      - MYSQL_USER=${DB_USER:-dishub_admin}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-dishub_password_123}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password_123}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_password_123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  static_volume:
+  media_volume:

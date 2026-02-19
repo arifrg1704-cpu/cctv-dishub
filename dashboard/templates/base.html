@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dashboard CCTV Lalu Lintas Kota Pontianak - Dinas Perhubungan Kota Pontianak. Pantau kondisi lalu lintas secara real-time.">
+    <meta name="keywords" content="CCTV, lalu lintas, Pontianak, Dishub, monitoring, traffic">
+    <meta name="author" content="Dinas Perhubungan Kota Pontianak">
+
+    <title>{% block title %}Dashboard CCTV Lalu Lintas{% endblock %} - Dishub Pontianak</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'assets/favicon.png' %}">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="header-brand">
+                <div class="logo-container">
+                    <img src="{% static 'assets/logo-pemkot.png' %}" alt="Logo Pemkot Pontianak" class="logo">
+                    <img src="{% static 'assets/logo-dishub.png' %}" alt="Logo Dishub Pontianak" class="logo">
+                </div>
+                <div class="brand-text">
+                    <h1>CCTV Lalu Lintas</h1>
+                    <p>Dinas Perhubungan Kota Pontianak</p>
+                </div>
+            </div>
+            <div class="header-info">
+                <div class="live-indicator">
+                    <span class="pulse"></span>
+                    <span>LIVE</span>
+                </div>
+                <div class="datetime" id="datetime"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; {{ current_year|default:"2025" }} Dinas Perhubungan Kota Pontianak</p>
+            <p class="footer-subtitle">Jl. Sultan Abdurrahman No. 1, Pontianak, Kalimantan Barat</p>
+        </div>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Custom JS -->
+    <script src="{% static 'js/script.js' %}?v={% now 'U' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

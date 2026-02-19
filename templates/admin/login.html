@@ -1,0 +1,145 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{% if form.errors %}{% translate "Error:" %} {% endif %}{{ block.super }}{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static " admin/css/login.css" %}">
+{{ form.media }}
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+
+{% block usertools %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+{% if form.errors and not form.non_field_errors %}
+<p class="errornote">
+  {% blocktranslate count counter=form.errors.items|length %}Please correct the error below.{% plural %}Please correct
+  the errors below.{% endblocktranslate %}
+</p>
+{% endif %}
+
+{% if form.non_field_errors %}
+{% for error in form.non_field_errors %}
+<p class="errornote">
+  {{ error }}
+</p>
+{% endfor %}
+{% endif %}
+
+<div id="content-main">
+
+  {% if user.is_authenticated %}
+  <p class="errornote">
+    {% blocktranslate trimmed %}
+    You are authenticated as {{ username }}, but are not authorized to
+    access this page. Would you like to login to a different account?
+    {% endblocktranslate %}
+  </p>
+  {% endif %}
+
+  <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+    <div class="form-row">
+      {{ form.username.errors }}
+      {{ form.username.label_tag }} {{ form.username }}
+    </div>
+    <div class="form-row">
+      {{ form.password.errors }}
+      {{ form.password.label_tag }} {{ form.password }}
+      <input type="hidden" name="next" value="{{ next }}">
+    </div>
+    {% if form.captcha %}
+    <div class="form-row">
+      {{ form.captcha.errors }}
+      {{ form.captcha.label_tag }}
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {{ form.captcha }}
+        <button type="button" id="refresh-captcha" title="Ganti CAPTCHA" style="
+          background: #417690;
+          border: none;
+          color: white;
+          padding: 8px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          transition: background 0.2s;
+        " onmouseover="this.style.background='#2e5a6f'" onmouseout="this.style.background='#417690'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Ganti
+        </button>
+      </div>
+    </div>
+    <script>
+      document.getElementById('refresh-captcha').addEventListener('click', function () {
+        var captchaImg = document.querySelector('img.captcha');
+        var captchaInput = document.querySelector('input[name="captcha_1"]');
+        var captchaHidden = document.querySelector('input[name="captcha_0"]');
+
+        if (captchaImg && captchaHidden) {
+          // Disable button during refresh
+          this.disabled = true;
+          this.style.opacity = '0.6';
+          this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Memuat...';
+
+          var btn = this;
+
+          // Fetch new CAPTCHA
+          fetch(window.location.pathname)
+            .then(response => response.text())
+            .then(html => {
+              var parser = new DOMParser();
+              var doc = parser.parseFromString(html, 'text/html');
+              var newCaptchaImg = doc.querySelector('img.captcha');
+              var newCaptchaHidden = doc.querySelector('input[name="captcha_0"]');
+
+              if (newCaptchaImg && newCaptchaHidden) {
+                // Append a timestamp to bust browser cache
+                captchaImg.src = newCaptchaImg.src + '?t=' + Date.now();
+                captchaHidden.value = newCaptchaHidden.value;
+                if (captchaInput) captchaInput.value = '';
+              }
+
+              // Re-enable button
+              btn.disabled = false;
+              btn.style.opacity = '1';
+              btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Ganti';
+            })
+            .catch(error => {
+              console.error('Error refreshing CAPTCHA:', error);
+              btn.disabled = false;
+              btn.style.opacity = '1';
+              btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Ganti';
+            });
+        }
+      });
+    </script>
+    {% endif %}
+    {% url 'admin_password_reset' as password_reset_url %}
+    {% if password_reset_url %}
+    <div class="password-reset-link">
+      <a href="{{ password_reset_url }}">{% translate 'Forgotten your login credentials?' %}</a>
+    </div>
+    {% endif %}
+    <div class="submit-row">
+      <input type="submit" value="{% translate 'Log in' %}">
+    </div>
+  </form>
+
+</div>
+{% endblock %}

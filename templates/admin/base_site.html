@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div class="branding-container">
+    <div class="branding-logos">
+        <img src="{% static 'assets/logo-pemkot.png' %}" alt="Logo Pemkot Pontianak">
+        <img src="{% static 'assets/logo-dishub.png' %}" alt="Logo Dishub Pontianak">
+    </div>
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">
+            Dashboard CCTV Pontianak
+        </a>
+    </h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

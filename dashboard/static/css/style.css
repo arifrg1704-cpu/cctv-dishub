@@ -1,0 +1,973 @@
+/**
+ * Dashboard CCTV Lalu Lintas Kota Pontianak
+ * Stylesheet - Dark Theme Professional
+ */
+
+/* ================================
+   CSS Variables & Root
+================================ */
+:root {
+    /* Colors */
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --primary-light: rgba(59, 130, 246, 0.1);
+    --secondary: #64748b;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    /* Dark Theme */
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-card: #1e293b;
+    --bg-card-hover: #334155;
+
+    /* Text */
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    /* Borders */
+    --border-color: #334155;
+    --border-light: rgba(255, 255, 255, 0.1);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+
+    /* Spacing */
+    --header-height: 70px;
+    --footer-height: 60px;
+    --control-bar-height: 85px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow: 500ms ease;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}
+
+/* ================================
+   Reset & Base
+================================ */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================================
+   Header
+================================ */
+.header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border-bottom: 1px solid var(--border-color);
+    height: var(--header-height);
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+}
+
+.header-container {
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.brand-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.brand-text p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.15);
+    padding: 6px 14px;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.live-indicator span:last-child {
+    color: var(--danger);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.pulse {
+    width: 10px;
+    height: 10px;
+    background: var(--danger);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.datetime {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ================================
+   Control Bar
+================================ */
+.control-bar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+    position: sticky;
+    top: var(--header-height);
+    z-index: 1000;
+}
+
+.control-bar-container {
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 4px;
+}
+
+.view-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.view-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.view-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.filter-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    min-width: 160px;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ================================
+   Main Content
+================================ */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.view-container {
+    display: none;
+    flex: 1;
+}
+
+.view-container.active {
+    display: block;
+}
+
+/* ================================
+   Grid View
+================================ */
+.cctv-grid {
+    display: grid;
+    gap: 20px;
+    padding: 24px;
+    max-width: 1920px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cctv-grid[data-columns="2"] {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.cctv-grid[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.cctv-grid[data-columns="4"] {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.cctv-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: var(--transition-normal);
+}
+
+.cctv-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.cctv-card.inactive {
+    opacity: 0.85;
+    border-color: var(--border-color);
+}
+
+.cctv-card.inactive:hover {
+    opacity: 1;
+    border-color: var(--danger);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.cctv-video-container {
+    position: relative;
+    padding-top: 56.25%;
+    /* 16:9 aspect ratio */
+    background: var(--bg-tertiary);
+}
+
+.cctv-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Placeholder Optimization */
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--transition-normal);
+}
+
+.cctv-card:hover .video-thumbnail {
+    transform: scale(1.05);
+}
+
+.play-button {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    background: rgba(59, 130, 246, 0.8);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: var(--transition-normal);
+    z-index: 5;
+    pointer-events: none;
+}
+
+.video-placeholder:hover .play-button {
+    background: var(--primary);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--primary);
+}
+
+.cctv-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, transparent 30%, transparent 70%, rgba(0, 0, 0, 0.5) 100%);
+    opacity: 0;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 12px;
+    z-index: 10;
+    pointer-events: none;
+    /* Default: lets events pass to placeholder */
+}
+
+.cctv-card:hover .cctv-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    /* Shield: catches all mouse moves so iframe stays quiet */
+}
+
+.fullscreen-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
+}
+
+.fullscreen-btn:hover {
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+.cctv-info {
+    padding: 16px;
+}
+
+.cctv-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.cctv-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cctv-location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.cctv-location svg {
+    color: var(--primary);
+}
+
+.cctv-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.cctv-status.active {
+    color: var(--success);
+}
+
+.cctv-status.inactive {
+    color: var(--danger);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+/* ================================
+   Map View
+================================ */
+.map-container {
+    height: calc(100vh - var(--header-height) - var(--control-bar-height) - var(--footer-height) - 48px);
+    width: calc(100% - 48px);
+    max-width: 1920px;
+    margin: 24px auto;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Leaflet Popup Custom Styling */
+.leaflet-popup-content-wrapper {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.leaflet-popup-content {
+    margin: 8px 12px;
+}
+
+.leaflet-popup-tip {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+}
+
+.popup-content {
+    min-width: 280px;
+}
+
+.popup-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.popup-kecamatan {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.popup-video {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+}
+
+.popup-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-align: center;
+}
+
+.popup-btn:hover {
+    background: var(--primary-hover);
+}
+
+/* Custom Marker */
+.custom-marker-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-marker {
+    background: var(--primary);
+    border: 3px solid white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+/* ================================
+   Modal
+================================ */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-title-container h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.modal-video-container {
+    position: relative;
+    padding-top: 56.25%;
+    background: var(--bg-primary);
+}
+
+.modal-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* ================================
+   Footer
+================================ */
+.footer {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 16px 24px;
+    text-align: center;
+}
+
+.footer-container {
+    max-width: 1920px;
+    margin: 0 auto;
+}
+
+.footer p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.footer-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ================================
+   No Data State
+================================ */
+.no-data {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    color: var(--text-muted);
+    gap: 16px;
+}
+
+.no-data svg {
+    opacity: 0.5;
+}
+
+.no-data p {
+    font-size: 1.1rem;
+}
+
+/* ================================
+   Responsive Design
+================================ */
+@media (max-width: 1200px) {
+    .cctv-grid[data-columns="4"] {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+
+    .cctv-grid[data-columns="3"],
+    .cctv-grid[data-columns="4"] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .control-bar-container {
+        flex-direction: column;
+        gap: 12px;
+        padding: 0 16px;
+    }
+
+    .filters {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .stats {
+        order: -1;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --header-height: 54px;
+    }
+
+    .header-container {
+        padding: 0 12px;
+    }
+
+    .logo {
+        height: 32px;
+    }
+
+    .brand-text h1 {
+        font-size: 1rem;
+    }
+
+    .brand-text p {
+        font-size: 0.7rem;
+    }
+
+    .live-indicator {
+        padding: 4px 10px;
+    }
+
+    .live-indicator span:last-child {
+        font-size: 0.75rem;
+    }
+
+    .datetime {
+        display: none;
+    }
+
+    .cctv-grid {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .cctv-grid[data-columns="2"],
+    .cctv-grid[data-columns="3"],
+    .cctv-grid[data-columns="4"] {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        flex: 1;
+        min-width: calc(50% - 6px);
+    }
+
+    .filter-group label {
+        font-size: 0.75rem;
+    }
+
+    .filter-select {
+        min-width: unset;
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+
+    .stat-item {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+    }
+
+    .modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .modal {
+        padding: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-brand {
+        gap: 8px;
+    }
+
+    .logo-container {
+        gap: 4px;
+    }
+
+    .logo {
+        height: 28px;
+    }
+
+    .brand-text h1 {
+        font-size: 0.95rem;
+    }
+
+    .brand-text p {
+        font-size: 0.65rem;
+    }
+
+    .view-btn span {
+        display: none;
+    }
+
+    .view-btn {
+        padding: 8px 10px;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .view-toggle {
+        width: 100%;
+    }
+
+    .stats {
+        gap: 16px;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .control-bar {
+        padding: 8px 0;
+    }
+
+    .filter-group label {
+        display: none;
+    }
+
+    .filters {
+        gap: 8px;
+    }
+}
+
+/* ================================
+   Print Styles
+================================ */
+@media print {
+
+    .header,
+    .control-bar,
+    .footer,
+    .cctv-overlay {
+        display: none;
+    }
+
+    .cctv-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cctv-card {
+        break-inside: avoid;
+    }
+}

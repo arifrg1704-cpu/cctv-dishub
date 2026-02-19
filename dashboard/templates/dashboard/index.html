@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Dashboard CCTV Lalu Lintas{% endblock %}
+
+{% block content %}
+<!-- Control Bar -->
+<div class="control-bar">
+    <div class="control-bar-container">
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active" data-view="grid" title="Tampilan Grid">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Grid</span>
+            </button>
+            <button class="view-btn" data-view="map" title="Tampilan Peta">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                <span>Peta</span>
+            </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filter-kecamatan">Kecamatan:</label>
+                <select id="filter-kecamatan" class="filter-select">
+                    <option value="all">Semua Kecamatan</option>
+                    {% for kecamatan in kecamatan_list %}
+                    <option value="{{ kecamatan.id }}">{{ kecamatan.nama }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="grid-layout">Layout:</label>
+                <select id="grid-layout" class="filter-select">
+                    <option value="2">2 x 2</option>
+                    <option value="3" selected>3 x 3</option>
+                    <option value="4">4 x 4</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-value" id="total-cctv">{{ total_cctv }}</span>
+                <span class="stat-label">Total CCTV</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ total_kecamatan }}</span>
+                <span class="stat-label">Kecamatan</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grid View -->
+<div id="grid-view" class="view-container active">
+    <div class="cctv-grid" id="cctv-grid" data-columns="3">
+        {% for cctv in cctv_list %}
+        <div class="cctv-card {% if not cctv.is_active %}inactive{% endif %}" data-id="{{ cctv.id }}"
+            data-kecamatan="{{ cctv.kecamatan.id }}" data-lat="{{ cctv.latitude|unlocalize }}"
+            data-lng="{{ cctv.longitude|unlocalize }}">
+            <div class="cctv-video-container" data-video-id="{{ cctv.youtube_video_id }}"
+                data-title="{{ cctv.nama_lokasi }}" onmouseenter="handleMouseEnter(this)"
+                onmouseleave="handleMouseLeave(this)">
+                <div class="video-placeholder" onclick="loadVideo(this.parentElement)">
+                    <img src="https://img.youtube.com/vi/{{ cctv.youtube_video_id }}/hqdefault.jpg"
+                        alt="{{ cctv.nama_lokasi }}" class="video-thumbnail" loading="lazy">
+                    <div class="play-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path d="M8 5v14l11-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="cctv-overlay">
+                    <button class="fullscreen-btn" title="Layar Penuh"
+                        onclick="openFullscreen({{ cctv.id }}, '{{ cctv.nama_lokasi|escapejs }}', '{{ cctv.youtube_video_id }}', '{{ cctv.kecamatan.nama|escapejs }}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="cctv-info">
+                <h3 class="cctv-title">{{ cctv.nama_lokasi }}</h3>
+                <div class="cctv-meta">
+                    <span class="cctv-location">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        {{ cctv.kecamatan.nama }}
+                    </span>
+                    <span class="cctv-status {% if cctv.is_active %}active{% else %}inactive{% endif %}">
+                        <span class="status-dot"></span>
+                        {% if cctv.is_active %}Aktif{% else %}Tidak Aktif{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-data">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <p>Belum ada data CCTV</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Map View -->
+<div id="map-view" class="view-container">
+    <div id="map" class="map-container"></div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div id="fullscreen-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title-container">
+                <h2 id="modal-title">Nama Lokasi</h2>
+                <span id="modal-kecamatan" class="modal-subtitle">Kecamatan</span>
+            </div>
+            <button class="modal-close" onclick="closeFullscreen()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-video-container">
+            <iframe id="modal-video" src="" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen referrerpolicy="strict-origin-when-cross-origin">
+            </iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
