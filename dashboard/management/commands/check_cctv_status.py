@@ -83,16 +83,23 @@ class Command(BaseCommand):
             is_online, error_msg = results.get(vid, (False, "Check skipped/failed"))
             
             # --- LOGIKA AUTO-DISCOVERY ---
-            # Jika video terdeteksi offline DAN memiliki setting discovery (Channel ID & Keyword)
-            if not is_online and cctv.youtube_channel_id and cctv.search_keyword:
-                self.stdout.write(f'  [Discovery] "{cctv.nama_lokasi}" offline, mencari di channel...')
-                new_vid, discovery_error = discover_live_video_by_keyword(cctv.youtube_channel_id, cctv.search_keyword)
+            # Jika video offline DAN punya Channel ID, coba cari video live baru
+            # Keyword: Gunakan search_keyword jika ada, jika tidak gunakan nama_lokasi
+            if not is_online and cctv.youtube_channel_id:
+                keyword = cctv.search_keyword if cctv.search_keyword else cctv.nama_lokasi
+                
+                self.stdout.write(f'  [Discovery] "{cctv.nama_lokasi}" offline, mencari "{keyword}"...')
+                new_vid, discovery_error = discover_live_video_by_keyword(cctv.youtube_channel_id, keyword)
                 
                 if new_vid:
-                    self.stdout.write(self.style.SUCCESS(f'  [Found!] "{cctv.nama_lokasi}" ganti ID: {vid} -> {new_vid}'))
-                    cctv.youtube_video_id = new_vid
-                    is_online = True
-                    error_msg = ""
+                    # Cek apakah ID baru sama dengan yang lama (kadang API search telat update)
+                    if new_vid == vid:
+                        self.stdout.write(f'  [Info] Video ID masih sama ({new_vid}), mungkin memang offline.')
+                    else:
+                        self.stdout.write(self.style.SUCCESS(f'  [Found!] "{cctv.nama_lokasi}" ganti ID: {vid} -> {new_vid}'))
+                        cctv.youtube_video_id = new_vid
+                        is_online = True
+                        error_msg = ""
                 else:
                     self.stdout.write(f'  [Not Found] {discovery_error}')
             # -----------------------------
