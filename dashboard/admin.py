@@ -32,6 +32,7 @@ class KecamatanAdmin(admin.ModelAdmin):
 @admin.register(CCTV)
 class CCTVAdmin(admin.ModelAdmin):
     """Admin untuk model CCTV"""
+    change_form_template = 'admin/dashboard/cctv/change_form.html'
     
     list_display = [
         'nama_lokasi', 

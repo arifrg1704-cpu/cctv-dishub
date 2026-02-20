@@ -1,0 +1,96 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<style>
+    #map-picker {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        z-index: 0;
+    }
+
+    .form-row.field-latitude,
+    .form-row.field-longitude {
+        display: inline-block;
+        width: 48%;
+    }
+</style>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Field elements
+        const latField = document.getElementById('id_latitude');
+        const lngField = document.getElementById('id_longitude');
+
+        // Create map container before the coordinates fieldset
+        // Check if map already exists to avoid duplication
+        if (!document.getElementById('map-picker')) {
+            const coordinatesFieldset = document.querySelector('.field-latitude').closest('fieldset');
+            const mapDiv = document.createElement('div');
+            mapDiv.id = 'map-picker';
+            coordinatesFieldset.insertBefore(mapDiv, coordinatesFieldset.firstChild);
+        }
+
+        // Default Pontianak coordinates
+        const defaultLat = -0.0226;
+        const defaultLng = 109.3425;
+
+        // Get current value or use default
+        let currentLat = latField.value ? parseFloat(latField.value) : defaultLat;
+        let currentLng = lngField.value ? parseFloat(lngField.value) : defaultLng;
+
+        // Initialize map
+        const map = L.map('map-picker').setView([currentLat, currentLng], 13);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Add draggable marker
+        let marker = L.marker([currentLat, currentLng], {
+            draggable: true
+        }).addTo(map);
+
+        // Update fields when marker is dragged
+        marker.on('dragend', function (e) {
+            const position = marker.getLatLng();
+            latField.value = position.lat.toFixed(7);
+            lngField.value = position.lng.toFixed(7);
+        });
+
+        // Move marker on map click
+        map.on('click', function (e) {
+            marker.setLatLng(e.latlng);
+            latField.value = e.latlng.lat.toFixed(7);
+            lngField.value = e.latlng.lng.toFixed(7);
+        });
+
+        // Update marker if fields are changed manually
+        function updateMarkerFromFields() {
+            const newLat = parseFloat(latField.value);
+            const newLng = parseFloat(lngField.value);
+
+            if (!isNaN(newLat) && !isNaN(newLng)) {
+                marker.setLatLng([newLat, newLng]);
+                map.panTo([newLat, newLng]);
+            }
+        }
+
+        latField.addEventListener('change', updateMarkerFromFields);
+        lngField.addEventListener('change', updateMarkerFromFields);
+    });
+</script>
+{% endblock %}
