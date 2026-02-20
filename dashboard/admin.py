@@ -56,7 +56,8 @@ class CCTVAdmin(admin.ModelAdmin):
             'fields': ('nama_lokasi', 'kecamatan', 'deskripsi')
         }),
         ('Konfigurasi Video', {
-            'fields': ('youtube_video_id',)
+            'fields': ('youtube_video_id', 'youtube_channel_id', 'search_keyword'),
+            'description': 'Isi Channel ID dan Keyword untuk fitur update otomatis jika link berubah'
         }),
         ('Koordinat GPS', {
             'fields': ('latitude', 'longitude'),
