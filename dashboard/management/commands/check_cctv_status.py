@@ -54,7 +54,7 @@ class Command(BaseCommand):
             self._check_all_cctv(video_id, verbose)
 
     def _check_all_cctv(self, video_id, verbose):
-        from dashboard.utils import check_multiple_videos
+        from dashboard.utils import check_multiple_videos, discover_live_video_by_keyword
         
         # Filter CCTV yang akan dicek
         if video_id:
@@ -71,11 +71,9 @@ class Command(BaseCommand):
         self.stdout.write(f'\nMengecek status {total} CCTV (' + timezone.now().strftime("%Y-%m-%d %H:%M:%S") + ')...')
         
         # Collect video IDs for batch check
-        # Note: If filtering by video_id, batch is just 1, but logic remains same
         video_ids = list(cctv_list.values_list('youtube_video_id', flat=True))
         
         # Batch Check (Hemat Quota!)
-        # 16 CCTV hanya butuh 1 request API
         results = check_multiple_videos(video_ids)
         
         stats = {'online': 0, 'offline': 0, 'error': 0}
@@ -84,11 +82,32 @@ class Command(BaseCommand):
             vid = cctv.youtube_video_id
             is_online, error_msg = results.get(vid, (False, "Check skipped/failed"))
             
+            # --- LOGIKA AUTO-DISCOVERY ---
+            # Jika video terdeteksi offline DAN memiliki setting discovery (Channel ID & Keyword)
+            if not is_online and cctv.youtube_channel_id and cctv.search_keyword:
+                self.stdout.write(f'  [Discovery] "{cctv.nama_lokasi}" offline, mencari di channel...')
+                new_vid, discovery_error = discover_live_video_by_keyword(cctv.youtube_channel_id, cctv.search_keyword)
+                
+                if new_vid:
+                    self.stdout.write(self.style.SUCCESS(f'  [Found!] "{cctv.nama_lokasi}" ganti ID: {vid} -> {new_vid}'))
+                    cctv.youtube_video_id = new_vid
+                    is_online = True
+                    error_msg = ""
+                else:
+                    self.stdout.write(f'  [Not Found] {discovery_error}')
+            # -----------------------------
+            
             # Update fields
             cctv.is_active = is_online
             cctv.last_status_check = timezone.now()
             cctv.status_check_error = error_msg if not is_online else None
-            cctv.save(update_fields=['is_active', 'last_status_check', 'status_check_error'])
+            
+            update_fields = ['is_active', 'last_status_check', 'status_check_error']
+            # Jika video_id berubah (karena discovery), simpan juga
+            if cctv.youtube_video_id != vid:
+                update_fields.append('youtube_video_id')
+                
+            cctv.save(update_fields=update_fields)
             
             if is_online:
                 stats['online'] += 1

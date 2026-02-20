@@ -48,7 +48,21 @@ class CCTV(models.Model):
     youtube_video_id = models.CharField(
         max_length=50,
         verbose_name='YouTube Video ID',
-        help_text='ID video dari URL YouTube (contoh: dQw4w9WgXcQ)'
+        help_text='ID video dari URL YouTube (contoh: dQw4w9WgXcQ). Akan diupdate otomatis jika Channel ID dan Keyword diisi.'
+    )
+    youtube_channel_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='YouTube Channel ID',
+        help_text='ID Channel yang menyiarkan CCTV ini (opsional, untuk auto-discovery)'
+    )
+    search_keyword = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Kata Kunci Pencarian',
+        help_text='Kata kunci unik di judul video YouTube untuk mencocokkan lokasi ini (misal: "Gajah Mada")'
     )
     latitude = models.DecimalField(
         max_digits=10,

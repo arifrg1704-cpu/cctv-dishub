@@ -184,3 +184,63 @@ def check_multiple_videos(video_ids: list, timeout: int = 10) -> dict:
             results[video_id] = (is_online, error_msg)
         
         return results
+
+
+def discover_live_video_by_keyword(channel_id: str, keyword: str, timeout: int = 15) -> Tuple[str, str]:
+    """
+    Cari video yang sedang LIVE di channel tertentu berdasarkan kata kunci di judul.
+    
+    Args:
+        channel_id: ID Channel YouTube
+        keyword: Kata kunci (case-insensitive)
+    
+    Returns:
+        Tuple[str, str]: (new_video_id, error_message)
+        - Jika ditemukan: (video_id, "")
+        - Jika tidak: ("", "Pesan error")
+    """
+    if not channel_id or not keyword:
+        return "", "Channel ID atau Keyword kosong"
+        
+    api_key = getattr(settings, 'YOUTUBE_API_KEY', None)
+    if not api_key:
+        return "", "YOUTUBE_API_KEY tidak dikonfigurasi"
+
+    api_url = "https://www.googleapis.com/youtube/v3/search"
+    params = {
+        'part': 'snippet',
+        'channelId': channel_id,
+        'type': 'video',
+        'eventType': 'live',
+        'q': keyword,
+        'key': api_key,
+        'maxResults': 5,
+    }
+
+    try:
+        response = requests.get(api_url, params=params, timeout=timeout)
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get('items', [])
+            
+            if not items:
+                return "", f"Tidak ada siaran live ditemukan dengan keyword '{keyword}'"
+            
+            # Cari yang paling cocok (case insensitive match di judul)
+            for item in items:
+                title = item['snippet']['title']
+                if keyword.lower() in title.lower():
+                    video_id = item['id']['videoId']
+                    logger.info(f"Auto-Discover: Found live video for '{keyword}': {video_id} ({title})")
+                    return video_id, ""
+            
+            return "", f"Siaran live ditemukan di channel, tapi judul tidak cocok dengan '{keyword}'"
+            
+        elif response.status_code == 403:
+            return "", "Kuota API YouTube habis atau akses ditolak"
+        else:
+            return "", f"API Error {response.status_code}"
+            
+    except Exception as e:
+        logger.error(f"Discovery error for {keyword}: {str(e)}")
+        return "", f"Koneksi Error: {str(e)}"
