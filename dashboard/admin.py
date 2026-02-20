@@ -46,8 +46,8 @@ class CCTVAdmin(admin.ModelAdmin):
     list_filter = ['kecamatan', 'is_active']
     search_fields = ['nama_lokasi', 'deskripsi', 'youtube_video_id']
     ordering = ['kecamatan', 'nama_lokasi']
-    list_editable = ['is_active']
-    readonly_fields = ['created_at', 'updated_at', 'last_status_check', 'status_check_error']
+    list_editable = []
+    readonly_fields = ['is_active', 'created_at', 'updated_at', 'last_status_check', 'status_check_error']
     actions = ['refresh_status_action']
     
     fieldsets = (

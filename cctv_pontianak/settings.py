@@ -145,3 +145,6 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+# YouTube Data API
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')

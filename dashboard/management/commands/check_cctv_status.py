@@ -24,10 +24,37 @@ class Command(BaseCommand):
             action='store_true',
             help='Tampilkan output detail',
         )
+        parser.add_argument(
+            '--loop',
+            type=int,
+            metavar='SECONDS',
+            nargs='?',
+            const=300,
+            help='Jalankan pengecekan terus menerus dengan interval tertentu (default 300 detik/5 menit)',
+        )
 
     def handle(self, *args, **options):
+        import time
+        from dashboard.utils import check_multiple_videos
+        
         video_id = options.get('video_id')
         verbose = options.get('verbose', False)
+        loop_interval = options.get('loop')
+        
+        if loop_interval:
+            self.stdout.write(self.style.SUCCESS(f'Starting continuous monitoring (Interval: {loop_interval}s)...'))
+            try:
+                while True:
+                    self._check_all_cctv(video_id, verbose)
+                    self.stdout.write(f'Sleeping for {loop_interval} seconds...')
+                    time.sleep(loop_interval)
+            except KeyboardInterrupt:
+                self.stdout.write(self.style.WARNING('\nMonitoring stopped by user.'))
+        else:
+            self._check_all_cctv(video_id, verbose)
+
+    def _check_all_cctv(self, video_id, verbose):
+        from dashboard.utils import check_multiple_videos
         
         # Filter CCTV yang akan dicek
         if video_id:
@@ -41,49 +68,37 @@ class Command(BaseCommand):
             cctv_list = CCTV.objects.all()
         
         total = cctv_list.count()
-        self.stdout.write(f'\nMengecek status {total} CCTV...\n')
+        self.stdout.write(f'\nMengecek status {total} CCTV (' + timezone.now().strftime("%Y-%m-%d %H:%M:%S") + ')...')
         
-        # Statistik
-        stats = {
-            'online': 0,
-            'offline': 0,
-            'error': 0,
-        }
+        # Collect video IDs for batch check
+        # Note: If filtering by video_id, batch is just 1, but logic remains same
+        video_ids = list(cctv_list.values_list('youtube_video_id', flat=True))
         
-        # Cek setiap CCTV
-        for idx, cctv in enumerate(cctv_list, 1):
-            if verbose:
-                self.stdout.write(f'[{idx}/{total}] Mengecek: {cctv.nama_lokasi}...')
+        # Batch Check (Hemat Quota!)
+        # 16 CCTV hanya butuh 1 request API
+        results = check_multiple_videos(video_ids)
+        
+        stats = {'online': 0, 'offline': 0, 'error': 0}
+        
+        for cctv in cctv_list:
+            vid = cctv.youtube_video_id
+            is_online, error_msg = results.get(vid, (False, "Check skipped/failed"))
             
-            try:
-                is_online, error_msg = cctv.update_status_from_youtube()
+            # Update fields
+            cctv.is_active = is_online
+            cctv.last_status_check = timezone.now()
+            cctv.status_check_error = error_msg if not is_online else None
+            cctv.save(update_fields=['is_active', 'last_status_check', 'status_check_error'])
+            
+            if is_online:
+                stats['online'] += 1
+                status_text = self.style.SUCCESS('✓ ONLINE')
+            else:
+                stats['offline'] += 1
+                status_text = self.style.WARNING(f'✗ OFFLINE - {error_msg}')
+            
+            if verbose:
+                self.stdout.write(f'  [{cctv.nama_lokasi}] {status_text}')
                 
-                if is_online:
-                    stats['online'] += 1
-                    status_text = self.style.SUCCESS('✓ ONLINE')
-                else:
-                    stats['offline'] += 1
-                    status_text = self.style.WARNING(f'✗ OFFLINE - {error_msg}')
-                
-                if verbose:
-                    self.stdout.write(f'  {status_text}')
-                    self.stdout.write(f'  Video ID: {cctv.youtube_video_id}')
-                    self.stdout.write(f'  Kecamatan: {cctv.kecamatan.nama}\n')
-                
-            except Exception as e:
-                stats['error'] += 1
-                self.stdout.write(
-                    self.style.ERROR(f'  ✗ ERROR: {str(e)}')
-                )
-                logger.error(f'Error checking CCTV {cctv.id}: {str(e)}')
-        
-        # Tampilkan ringkasan
-        self.stdout.write('\n' + '='*50)
-        self.stdout.write(self.style.SUCCESS(f'\n✓ Pengecekan selesai!\n'))
-        self.stdout.write(f'Total CCTV dicek: {total}')
-        self.stdout.write(self.style.SUCCESS(f'Online: {stats["online"]}'))
-        self.stdout.write(self.style.WARNING(f'Offline: {stats["offline"]}'))
-        if stats['error'] > 0:
-            self.stdout.write(self.style.ERROR(f'Error: {stats["error"]}'))
-        self.stdout.write(f'\nWaktu: {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}')
-        self.stdout.write('='*50 + '\n')
+        # Summary
+        self.stdout.write(f'Result: {stats["online"]} Online, {stats["offline"]} Offline')
