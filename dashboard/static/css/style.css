@@ -283,7 +283,15 @@ body {
 .stats {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Stream indicator base (detail style injected via JS) */
+.stream-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .stat-item {

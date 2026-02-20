@@ -51,6 +51,18 @@
                     <option value="4">4 x 4</option>
                 </select>
             </div>
+
+            <div class="filter-group">
+                <label for="max-streams">Maks. Live:</label>
+                <select id="max-streams" class="filter-select">
+                    <option value="1">1 stream</option>
+                    <option value="2">2 stream</option>
+                    <option value="4" selected>4 stream</option>
+                    <option value="6">6 stream</option>
+                    <option value="9">9 stream</option>
+                    <option value="999">Semua</option>
+                </select>
+            </div>
         </div>
 
         <!-- Stats -->
@@ -62,6 +74,12 @@
             <div class="stat-item">
                 <span class="stat-value">{{ total_kecamatan }}</span>
                 <span class="stat-label">Kecamatan</span>
+            </div>
+
+            <!-- [Langkah 4] Indikator stream aktif -->
+            <div id="active-stream-indicator" class="stream-indicator">
+                <span class="indicator-dot"></span>
+                <span><span class="active-count">0</span> / <span class="max-count">4</span> Live</span>
             </div>
         </div>
     </div>
@@ -75,8 +93,7 @@
             data-kecamatan="{{ cctv.kecamatan.id }}" data-lat="{{ cctv.latitude|unlocalize }}"
             data-lng="{{ cctv.longitude|unlocalize }}">
             <div class="cctv-video-container" data-video-id="{{ cctv.youtube_video_id }}"
-                data-title="{{ cctv.nama_lokasi }}" onmouseenter="handleMouseEnter(this)"
-                onmouseleave="handleMouseLeave(this)">
+                data-title="{{ cctv.nama_lokasi }}">
                 <div class="video-placeholder" onclick="loadVideo(this.parentElement)">
                     <img src="https://img.youtube.com/vi/{{ cctv.youtube_video_id }}/hqdefault.jpg"
                         alt="{{ cctv.nama_lokasi }}" class="video-thumbnail" loading="lazy">

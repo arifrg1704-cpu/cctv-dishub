@@ -13,6 +13,208 @@ let currentView = 'grid';
 let currentFilter = 'all';
 
 // ================================
+// [LANGKAH 1, 2, 3, 4] - Smart Stream Manager
+// ================================
+const StreamManager = {
+    // Konfigurasi batas concurrent streams (Langkah 2)
+    maxConcurrent: 4,
+
+    // Tracking iframe yang sedang aktif: Map<videoContainer, true>
+    activeStreams: new Map(),
+
+    // IntersectionObserver instance (Langkah 1)
+    observer: null,
+
+    // Inisialisasi observer
+    init() {
+        this.observer = new IntersectionObserver(
+            (entries) => this._handleIntersection(entries),
+            {
+                root: null,         // viewport
+                rootMargin: '0px',
+                threshold: 0.3      // 30% terlihat = mulai load
+            }
+        );
+    },
+
+    // Pasang observer ke sebuah container video
+    observe(container) {
+        if (this.observer) {
+            this.observer.observe(container);
+        }
+    },
+
+    // Cabut observer dari container
+    unobserve(container) {
+        if (this.observer) {
+            this.observer.unobserve(container);
+        }
+    },
+
+    // [Langkah 1 & 3] Handler saat card masuk/keluar viewport
+    _handleIntersection(entries) {
+        entries.forEach(entry => {
+            const container = entry.target;
+            if (entry.isIntersecting) {
+                // Card terlihat di layar → coba load jika slot tersedia
+                this._tryLoad(container);
+            } else {
+                // [Langkah 3] Card keluar viewport → unload untuk hemat resource
+                this._unload(container);
+            }
+        });
+    },
+
+    // [Langkah 2] Coba load dengan memperhatikan batas maksimum
+    _tryLoad(container) {
+        // Sudah diload? Skip
+        if (this.activeStreams.has(container)) return;
+
+        // Belum ada slot? Skip (tunggu sampai ada yang unload)
+        if (this.activeStreams.size >= this.maxConcurrent) {
+            container.dataset.pendingLoad = 'true';
+            this._showWaitingBadge(container);
+            return;
+        }
+
+        this._load(container);
+    },
+
+    // Load iframe YouTube ke dalam container
+    _load(container) {
+        const videoId = container.dataset.videoId;
+        const title = container.dataset.title;
+        if (!videoId) return;
+
+        const placeholder = container.querySelector('.video-placeholder');
+        if (!placeholder) return;
+
+        // Sudah ada iframe? Jangan dobel
+        if (container.querySelector('iframe.cctv-video')) return;
+
+        const iframe = document.createElement('iframe');
+        iframe.className = 'cctv-video';
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&autoplay=1&mute=1&modestbranding=1&controls=0&showinfo=0&fs=0`;
+        iframe.title = title || videoId;
+        iframe.frameBorder = '0';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+        iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+
+        placeholder.style.display = 'none';
+        container.appendChild(iframe);
+
+        this.activeStreams.set(container, true);
+        container.dataset.pendingLoad = 'false';
+        this._removeBadge(container, 'waiting-badge');
+
+        // [Langkah 4] Update indikator
+        this._updateIndicator();
+    },
+
+    // [Langkah 3] Unload iframe dari container
+    _unload(container) {
+        const iframe = container.querySelector('iframe.cctv-video');
+        const placeholder = container.querySelector('.video-placeholder');
+
+        if (iframe) {
+            iframe.remove();
+        }
+        if (placeholder) {
+            placeholder.style.display = '';
+        }
+
+        const wasActive = this.activeStreams.has(container);
+        this.activeStreams.delete(container);
+        container.dataset.pendingLoad = 'false';
+        this._removeBadge(container, 'waiting-badge');
+
+        // Jika ada slot baru, coba load yang sedang pending
+        if (wasActive) {
+            this._promotePending();
+            // [Langkah 4] Update indikator
+            this._updateIndicator();
+        }
+    },
+
+    // Setelah ada slot kosong, load card pending pertama yang terlihat
+    _promotePending() {
+        const allContainers = document.querySelectorAll('.cctv-video-container');
+        for (const container of allContainers) {
+            if (container.dataset.pendingLoad === 'true') {
+                // Cek apakah masih di viewport
+                const rect = container.getBoundingClientRect();
+                const inViewport = (
+                    rect.top < window.innerHeight &&
+                    rect.bottom > 0 &&
+                    rect.left < window.innerWidth &&
+                    rect.right > 0
+                );
+                if (inViewport) {
+                    this._load(container);
+                    break;
+                }
+            }
+        }
+    },
+
+    // Tampilkan badge "Antrian" di card yang sedang pending
+    _showWaitingBadge(container) {
+        if (container.querySelector('.waiting-badge')) return;
+        const badge = document.createElement('div');
+        badge.className = 'waiting-badge';
+        badge.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Menunggu slot...
+        `;
+        container.appendChild(badge);
+    },
+
+    _removeBadge(container, className) {
+        const badge = container.querySelector(`.${className}`);
+        if (badge) badge.remove();
+    },
+
+    // [Langkah 4] Update tampilan indikator aktif di header control bar
+    _updateIndicator() {
+        const indicator = document.getElementById('active-stream-indicator');
+        if (!indicator) return;
+        const active = this.activeStreams.size;
+        const max = this.maxConcurrent;
+        indicator.querySelector('.active-count').textContent = active;
+        indicator.querySelector('.max-count').textContent = max;
+
+        // Warna berubah berdasarkan tingkat penggunaan
+        indicator.className = 'stream-indicator';
+        if (active === max) {
+            indicator.classList.add('full');
+        } else if (active > 0) {
+            indicator.classList.add('partial');
+        }
+    },
+
+    // Ubah batas concurrent dari luar (dipanggil saat user ganti selector)
+    setMaxConcurrent(n) {
+        this.maxConcurrent = n;
+        this._updateIndicator();
+        // Jika batas dinaikkan, promote pending
+        this._promotePending();
+        // Jika batas diturunkan, tidak paksa unload yang sudah jalan
+    },
+
+    // Unload semua stream (dipanggil saat switch ke Map view)
+    unloadAll() {
+        const allContainers = document.querySelectorAll('.cctv-video-container');
+        allContainers.forEach(c => this._unload(c));
+    },
+
+    // Pasang ulang observer ke semua container yang ada
+    reobserveAll() {
+        const allContainers = document.querySelectorAll('.cctv-video-container');
+        allContainers.forEach(c => this.observe(c));
+    }
+};
+
+// ================================
 // Initialize on DOM Ready
 // ================================
 document.addEventListener('DOMContentLoaded', function () {
@@ -20,6 +222,18 @@ document.addEventListener('DOMContentLoaded', function () {
     initViewToggle();
     initFilters();
     initGridLayout();
+    initMaxStreamSelector(); // [Langkah 2] Init selector
+
+    // Inisialisasi StreamManager [Langkah 1]
+    StreamManager.init();
+
+    // Pasang observer ke semua card yang ada
+    document.querySelectorAll('.cctv-video-container').forEach(container => {
+        StreamManager.observe(container);
+    });
+
+    // Update indikator awal [Langkah 4]
+    StreamManager._updateIndicator();
 
     // Fetch data via API before initializing map
     fetchCCTVData().then(() => {
@@ -28,6 +242,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initKeyboardShortcuts();
 });
+
+// ================================
+// [Langkah 2] Inisialisasi selector Max Live Streams
+// ================================
+function initMaxStreamSelector() {
+    const selector = document.getElementById('max-streams');
+    if (!selector) return;
+
+    // Set default value di selector sesuai StreamManager
+    selector.value = StreamManager.maxConcurrent;
+
+    selector.addEventListener('change', function () {
+        const val = parseInt(this.value, 10);
+        StreamManager.setMaxConcurrent(val);
+    });
+}
 
 // ================================
 // Data Fetching
@@ -95,9 +325,15 @@ function initViewToggle() {
             if (view === 'grid') {
                 gridView.classList.add('active');
                 mapView.classList.remove('active');
+
+                // Re-observe semua container setelah kembali ke grid
+                setTimeout(() => StreamManager.reobserveAll(), 100);
             } else {
                 gridView.classList.remove('active');
                 mapView.classList.add('active');
+
+                // [Langkah 3] Unload semua stream saat pindah ke map view
+                StreamManager.unloadAll();
 
                 // Invalidate map size when shown and refit bounds
                 if (map) {
@@ -139,12 +375,17 @@ function filterCCTV(kecamatanId) {
 
     cards.forEach(card => {
         const cardKecamatan = card.dataset.kecamatan;
+        const container = card.querySelector('.cctv-video-container');
 
         if (kecamatanId === 'all' || cardKecamatan === kecamatanId) {
             card.style.display = 'block';
             visibleCount++;
+            // Re-observe supaya Intersection Observer re-evaluate
+            if (container) StreamManager.observe(container);
         } else {
             card.style.display = 'none';
+            // Unload video yang disembunyikan
+            if (container) StreamManager._unload(container);
         }
     });
 
@@ -169,6 +410,12 @@ function initGridLayout() {
         layoutSelect.addEventListener('change', function () {
             const columns = this.value;
             grid.dataset.columns = columns;
+
+            // Setelah layout berubah, trigger re-evaluate observer
+            setTimeout(() => {
+                StreamManager.unloadAll();
+                StreamManager.reobserveAll();
+            }, 100);
         });
     }
 }
@@ -296,8 +543,6 @@ function addMapMarkers() {
     if (markers.length > 0) {
         const group = new L.featureGroup(markers);
         if (group.getBounds().isValid()) {
-            // Apply maxZoom to avoid zooming in too much on a single marker
-            // and avoid zooming out too far if dimensions are zero
             map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 15 });
         }
     }
@@ -376,66 +621,16 @@ function initKeyboardShortcuts() {
 }
 
 // ================================
-// Utility Functions
+// Legacy: loadVideo / unloadVideo
+// (masih dipakai oleh popup peta & onclick thumbnail)
 // ================================
-let hoverTimers = {};
-
-function handleMouseEnter(container) {
-    const videoId = container.dataset.videoId;
-    if (!videoId) return;
-
-    // Clear any existing timer to avoid flickering
-    if (hoverTimers[videoId]) {
-        clearTimeout(hoverTimers[videoId]);
-    }
-
-    // Delay loading slightly to avoid triggers on quick sweeps
-    hoverTimers[videoId] = setTimeout(() => {
-        loadVideo(container);
-    }, 500); // 500ms debounce
-}
-
-function handleMouseLeave(container) {
-    const videoId = container.dataset.videoId;
-    if (hoverTimers[videoId]) {
-        clearTimeout(hoverTimers[videoId]);
-        delete hoverTimers[videoId];
-    }
-
-    // Optional: Unload video to save resources when not looking
-    unloadVideo(container);
-}
-
 function loadVideo(container) {
-    const videoId = container.dataset.videoId;
-    const title = container.dataset.title;
-    const placeholder = container.querySelector('.video-placeholder');
-
-    if (!videoId || !placeholder || placeholder.style.display === 'none') return;
-
-    // Create iframe
-    const iframe = document.createElement('iframe');
-    iframe.className = 'cctv-video';
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&autoplay=1&mute=1&modestbranding=1&controls=0&showinfo=0&fs=0`;
-    iframe.title = title;
-    iframe.frameBorder = '0';
-    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-    iframe.allowFullscreen = true;
-    iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-
-    // Remove placeholder and add iframe
-    placeholder.style.display = 'none';
-    container.appendChild(iframe);
+    // Gunakan StreamManager untuk konsistensi slot management
+    StreamManager._tryLoad(container);
 }
 
 function unloadVideo(container) {
-    const iframe = container.querySelector('iframe.cctv-video');
-    const placeholder = container.querySelector('.video-placeholder');
-
-    if (iframe && placeholder) {
-        iframe.remove();
-        placeholder.style.display = 'flex';
-    }
+    StreamManager._unload(container);
 }
 
 function escapeHtml(text) {
@@ -445,7 +640,7 @@ function escapeHtml(text) {
 }
 
 // ================================
-// Add custom marker styles dynamically
+// Add custom marker + stream badge styles
 // ================================
 const style = document.createElement('style');
 style.textContent = `
@@ -481,7 +676,6 @@ style.textContent = `
         overflow: hidden;
     }
     .popup-video-wrapper .video-placeholder {
-        /* Remove redundant padding-top as it's already in .cctv-video-container */
         display: flex;
     }
     .popup-video-wrapper .video-thumbnail {
@@ -510,6 +704,73 @@ style.textContent = `
     .popup-header-row .cctv-status {
         font-size: 11px;
         padding: 2px 6px;
+    }
+
+    /* === Waiting Badge [Langkah 3] === */
+    .waiting-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.65);
+        color: #facc15;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        backdrop-filter: blur(4px);
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    /* === Stream Indicator [Langkah 4] === */
+    .stream-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        transition: all 0.3s ease;
+    }
+    .stream-indicator .indicator-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #475569;
+        transition: background 0.3s;
+    }
+    .stream-indicator.partial .indicator-dot {
+        background: #22c55e;
+        box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+        animation: pulse-green 1.5s infinite;
+    }
+    .stream-indicator.partial {
+        color: #22c55e;
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+    .stream-indicator.full .indicator-dot {
+        background: #f59e0b;
+        box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+        animation: pulse-amber 1.5s infinite;
+    }
+    .stream-indicator.full {
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+    @keyframes pulse-green {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.3); }
+    }
+    @keyframes pulse-amber {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.3); }
     }
 `;
 document.head.appendChild(style);
