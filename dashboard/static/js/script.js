@@ -348,7 +348,12 @@ function initGridLayout() {
             const columns = this.value;
             grid.dataset.columns = columns;
 
-            // Setelah layout berubah, trigger re-evaluate observer
+            // Jika di mode display, re-render dengan kolom baru
+            if (currentView === 'display') {
+                renderDisplayView();
+            }
+
+            // Setelah layout berubah, trigger re-evaluate observer (untuk Grid)
             setTimeout(() => {
                 StreamManager.unloadAll();
                 StreamManager.reobserveAll();
@@ -640,9 +645,11 @@ function renderDisplayView() {
 
     pageInfo.textContent = `Halaman ${displayCurrentPage} dari ${totalPages}`;
 
-    // Sesuaikan column css pada display-grid agar tampil cantik (akar kuadrat)
-    const cols = Math.ceil(Math.sqrt(displayItemsPerPage));
+    // Baca kolom dari dropdown Layout (sama seperti Grid View)
+    const layoutSelect = document.getElementById('grid-layout');
+    const cols = layoutSelect ? parseInt(layoutSelect.value) : 3;
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.dataset.columns = cols;
 
     // Ambil data untuk halaman ini
     const startIdx = (displayCurrentPage - 1) * displayItemsPerPage;
