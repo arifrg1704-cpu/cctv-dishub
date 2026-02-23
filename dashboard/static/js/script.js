@@ -684,19 +684,6 @@ function renderDisplayView() {
                     </button>
                 </div>
             </div>
-            <div class="cctv-info">
-                <h3 class="cctv-title">${escapeHtml(cctv.nama_lokasi)}</h3>
-                <div class="cctv-meta">
-                    <span class="cctv-location">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        ${escapeHtml(cctv.kecamatan)}
-                    </span>
-                    <span class="cctv-status ${statusClass}">
-                        <span class="status-dot"></span>
-                        ${statusText}
-                    </span>
-                </div>
-            </div>
         `;
         grid.appendChild(card);
     });
