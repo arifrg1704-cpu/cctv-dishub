@@ -52,7 +52,6 @@ class CCTVAdmin(admin.ModelAdmin):
         'nama_lokasi', 
         'kecamatan', 
         'status_badge',
-        'is_active',
         'youtube_video_id',
         'koordinat',
         'last_check_info',
