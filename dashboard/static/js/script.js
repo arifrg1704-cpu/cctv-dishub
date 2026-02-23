@@ -16,7 +16,7 @@ let currentFilter = 'all';
 let displayCurrentPage = 1;
 let displayItemsPerPage = 9;
 let displayTimer = null;
-const DISPLAY_DURATION = 15000; // 15 detik
+const DISPLAY_DURATION = 300000; // 5 menit
 let filteredCctvData = []; // Menyimpan data yang sudah difilter kecamatan
 
 // ================================
