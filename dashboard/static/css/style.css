@@ -543,6 +543,85 @@ body {
 }
 
 /* ================================
+   Display View
+================================ */
+#display-view.view-container.active {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height) - var(--control-bar-height) - var(--footer-height));
+    overflow: hidden;
+}
+
+#display-view .cctv-grid {
+    flex: 1;
+    overflow: auto;
+    padding: 16px 24px;
+    margin: 0;
+}
+
+.display-footer {
+    flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.display-progress-container {
+    height: 4px;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.display-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary), #60a5fa);
+    transition: width linear;
+}
+
+.display-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 24px;
+}
+
+.display-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.display-nav-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.display-info {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    padding: 8px 24px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    min-width: 180px;
+    text-align: center;
+}
+
+/* ================================
    Map View
 ================================ */
 .map-container {

@@ -5,7 +5,7 @@ Django Admin configuration untuk Dashboard CCTV
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import Kecamatan, CCTV
+from .models import Kecamatan, YoutubeChannel, CCTV
 from .forms import AdminLoginForm
 
 # Admin Customization Branding
@@ -25,6 +25,20 @@ class KecamatanAdmin(admin.ModelAdmin):
     
     def jumlah_cctv(self, obj):
         """Hitung jumlah CCTV di kecamatan ini"""
+        return obj.cctv_list.count()
+    jumlah_cctv.short_description = 'Jumlah CCTV'
+
+
+@admin.register(YoutubeChannel)
+class YoutubeChannelAdmin(admin.ModelAdmin):
+    """Admin untuk model YoutubeChannel"""
+    
+    list_display = ['nama', 'channel_id', 'jumlah_cctv', 'created_at']
+    search_fields = ['nama', 'channel_id']
+    ordering = ['nama']
+    
+    def jumlah_cctv(self, obj):
+        """Hitung jumlah CCTV yang menggunakan channel ini"""
         return obj.cctv_list.count()
     jumlah_cctv.short_description = 'Jumlah CCTV'
 
@@ -56,8 +70,8 @@ class CCTVAdmin(admin.ModelAdmin):
             'fields': ('nama_lokasi', 'kecamatan', 'deskripsi')
         }),
         ('Konfigurasi Video', {
-            'fields': ('youtube_video_id', 'youtube_channel_id', 'search_keyword'),
-            'description': 'Isi Channel ID untuk fitur update otomatis. Kata Kunci opsional (jika kosong, akan menggunakan Nama Lokasi).'
+            'fields': ('youtube_video_id', 'youtube_channel', 'search_keyword'),
+            'description': 'Pilih Channel YouTube untuk fitur update otomatis. Kata Kunci opsional (jika kosong, akan menggunakan Nama Lokasi).'
         }),
         ('Koordinat GPS', {
             'fields': ('latitude', 'longitude'),

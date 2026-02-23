@@ -2,7 +2,7 @@
 {% load static %}
 {% load l10n %}
 
-{% block title %}Dashboard CCTV Lalu Lintas{% endblock %}
+{% block title %}Dashboard ATCS Kota Pontianak{% endblock %}
 
 {% block content %}
 <!-- Control Bar -->
@@ -29,6 +29,15 @@
                 </svg>
                 <span>Peta</span>
             </button>
+            <button class="view-btn" data-view="display" title="Tampilan Display">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <span>Display</span>
+            </button>
         </div>
 
         <!-- Filters -->
@@ -50,19 +59,14 @@
                     <option value="3" selected>3 x 3</option>
                     <option value="4">4 x 4</option>
                 </select>
+                <div class="filter-group display-only" style="display: none;">
+                    <label for="items-per-page">CCTV/Halaman:</label>
+                    <input type="number" id="items-per-page" class="filter-select" style="width: 70px;" min="1" max="20"
+                        value="9">
+                </div>
             </div>
 
-            <div class="filter-group">
-                <label for="max-streams">Maks. Live:</label>
-                <select id="max-streams" class="filter-select">
-                    <option value="1">1 stream</option>
-                    <option value="2">2 stream</option>
-                    <option value="4" selected>4 stream</option>
-                    <option value="6">6 stream</option>
-                    <option value="9">9 stream</option>
-                    <option value="999">Semua</option>
-                </select>
-            </div>
+
         </div>
 
         <!-- Stats -->
@@ -76,10 +80,10 @@
                 <span class="stat-label">Kecamatan</span>
             </div>
 
-            <!-- [Langkah 4] Indikator stream aktif -->
+            <!-- Indikator stream aktif (hover mode) -->
             <div id="active-stream-indicator" class="stream-indicator">
                 <span class="indicator-dot"></span>
-                <span><span class="active-count">0</span> / <span class="max-count">4</span> Live</span>
+                <span><span class="active-count">0</span> Live &middot; <span class="max-count">hover</span></span>
             </div>
         </div>
     </div>
@@ -151,6 +155,37 @@
 <!-- Map View -->
 <div id="map-view" class="view-container">
     <div id="map" class="map-container"></div>
+</div>
+
+<!-- Display View -->
+<div id="display-view" class="view-container">
+    <div class="cctv-grid" id="display-grid">
+        <!-- CCTV Cards for Display will be generated via Javascript -->
+    </div>
+    <div class="display-footer">
+        <div class="display-progress-container">
+            <div id="display-progress-bar" class="display-progress-bar"></div>
+        </div>
+        <div class="display-controls">
+            <button id="display-prev" class="display-nav-btn" title="Halaman Sebelumnya">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Sebelumnya</span>
+            </button>
+            <div class="display-info">
+                <span id="display-page-info">Halaman 1 dari 1</span>
+            </div>
+            <button id="display-next" class="display-nav-btn" title="Halaman Selanjutnya">
+                <span>Selanjutnya</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Fullscreen Modal -->

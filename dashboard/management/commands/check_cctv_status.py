@@ -83,13 +83,13 @@ class Command(BaseCommand):
             is_online, error_msg = results.get(vid, (False, "Check skipped/failed"))
             
             # --- LOGIKA AUTO-DISCOVERY ---
-            # Jika video offline DAN punya Channel ID, coba cari video live baru
+            # Jika video offline DAN terhubung dengan objek Channel, coba cari video live baru
             # Keyword: Gunakan search_keyword jika ada, jika tidak gunakan nama_lokasi
-            if not is_online and cctv.youtube_channel_id:
+            if not is_online and cctv.youtube_channel:
                 keyword = cctv.search_keyword if cctv.search_keyword else cctv.nama_lokasi
                 
                 self.stdout.write(f'  [Discovery] "{cctv.nama_lokasi}" offline, mencari "{keyword}"...')
-                new_vid, discovery_error = discover_live_video_by_keyword(cctv.youtube_channel_id, keyword)
+                new_vid, discovery_error = discover_live_video_by_keyword(cctv.youtube_channel.channel_id, keyword)
                 
                 if new_vid:
                     # Cek apakah ID baru sama dengan yang lama (kadang API search telat update)

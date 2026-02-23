@@ -27,6 +27,33 @@ class Kecamatan(models.Model):
         return self.nama
 
 
+class YoutubeChannel(models.Model):
+    """Model untuk menyimpan data YouTube Channel yang menyiarkan CCTV"""
+    
+    nama = models.CharField(
+        max_length=200,
+        verbose_name='Nama Channel'
+    )
+    channel_id = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='YouTube Channel ID',
+        help_text='ID unik Channel YouTube (contoh: UCxxxxx)'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Dibuat Pada'
+    )
+    
+    class Meta:
+        verbose_name = 'YouTube Channel'
+        verbose_name_plural = 'YouTube Channel'
+        ordering = ['nama']
+    
+    def __str__(self):
+        return f"{self.nama} ({self.channel_id})"
+
+
 class CCTV(models.Model):
     """Model untuk menyimpan data CCTV"""
     
@@ -48,14 +75,16 @@ class CCTV(models.Model):
     youtube_video_id = models.CharField(
         max_length=50,
         verbose_name='YouTube Video ID',
-        help_text='ID video dari URL YouTube (contoh: dQw4w9WgXcQ). Akan diupdate otomatis jika Channel ID dan Keyword diisi.'
+        help_text='ID video dari URL YouTube (contoh: dQw4w9WgXcQ). Akan diupdate otomatis jika Channel dan Keyword diisi.'
     )
-    youtube_channel_id = models.CharField(
-        max_length=100,
+    youtube_channel = models.ForeignKey(
+        YoutubeChannel,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name='YouTube Channel ID',
-        help_text='ID Channel yang menyiarkan CCTV ini (opsional, untuk auto-discovery)'
+        related_name='cctv_list',
+        verbose_name='YouTube Channel',
+        help_text='Channel yang menyiarkan CCTV ini (opsional, untuk auto-discovery)'
     )
     search_keyword = models.CharField(
         max_length=100,

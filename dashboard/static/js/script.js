@@ -12,72 +12,44 @@ let cctvData = []; // Data will be loaded via API
 let currentView = 'grid';
 let currentFilter = 'all';
 
+// State untuk mode Display
+let displayCurrentPage = 1;
+let displayItemsPerPage = 9;
+let displayTimer = null;
+const DISPLAY_DURATION = 15000; // 15 detik
+let filteredCctvData = []; // Menyimpan data yang sudah difilter kecamatan
+
 // ================================
-// [LANGKAH 1, 2, 3, 4] - Smart Stream Manager
+// Stream Manager (Hover-to-Play)
 // ================================
 const StreamManager = {
-    // Konfigurasi batas concurrent streams (Langkah 2)
-    maxConcurrent: 4,
 
-    // Tracking iframe yang sedang aktif: Map<videoContainer, true>
+    // Tracking iframe yang sedang aktif
     activeStreams: new Map(),
 
-    // IntersectionObserver instance (Langkah 1)
-    observer: null,
-
-    // Inisialisasi observer
+    // Inisialisasi (tidak perlu IntersectionObserver, pakai hover)
     init() {
-        this.observer = new IntersectionObserver(
-            (entries) => this._handleIntersection(entries),
-            {
-                root: null,         // viewport
-                rootMargin: '0px',
-                threshold: 0.3      // 30% terlihat = mulai load
-            }
-        );
+        // Tidak ada observer yang perlu diinisialisasi
     },
 
-    // Pasang observer ke sebuah container video
+    // Pasang event hover ke sebuah container video
     observe(container) {
-        if (this.observer) {
-            this.observer.observe(container);
-        }
-    },
+        // Hindari dobel pasang listener
+        if (container._hoverBound) return;
+        container._hoverBound = true;
 
-    // Cabut observer dari container
-    unobserve(container) {
-        if (this.observer) {
-            this.observer.unobserve(container);
-        }
-    },
-
-    // [Langkah 1 & 3] Handler saat card masuk/keluar viewport
-    _handleIntersection(entries) {
-        entries.forEach(entry => {
-            const container = entry.target;
-            if (entry.isIntersecting) {
-                // Card terlihat di layar → coba load jika slot tersedia
-                this._tryLoad(container);
-            } else {
-                // [Langkah 3] Card keluar viewport → unload untuk hemat resource
-                this._unload(container);
-            }
+        container.addEventListener('mouseenter', () => {
+            this._load(container);
+        });
+        container.addEventListener('mouseleave', () => {
+            this._unload(container);
         });
     },
 
-    // [Langkah 2] Coba load dengan memperhatikan batas maksimum
-    _tryLoad(container) {
-        // Sudah diload? Skip
-        if (this.activeStreams.has(container)) return;
-
-        // Belum ada slot? Skip (tunggu sampai ada yang unload)
-        if (this.activeStreams.size >= this.maxConcurrent) {
-            container.dataset.pendingLoad = 'true';
-            this._showWaitingBadge(container);
-            return;
-        }
-
-        this._load(container);
+    // Cabut flag (tidak bisa remove anonymous listener, tapi cukup untuk reset)
+    unobserve(container) {
+        // Karena listener anonim, kita tandai ulang agar bisa di-reobserve
+        container._hoverBound = false;
     },
 
     // Load iframe YouTube ke dalam container
@@ -104,14 +76,12 @@ const StreamManager = {
         container.appendChild(iframe);
 
         this.activeStreams.set(container, true);
-        container.dataset.pendingLoad = 'false';
-        this._removeBadge(container, 'waiting-badge');
 
-        // [Langkah 4] Update indikator
+        // Update indikator
         this._updateIndicator();
     },
 
-    // [Langkah 3] Unload iframe dari container
+    // Unload iframe dari container
     _unload(container) {
         const iframe = container.querySelector('iframe.cctv-video');
         const placeholder = container.querySelector('.video-placeholder');
@@ -123,82 +93,28 @@ const StreamManager = {
             placeholder.style.display = '';
         }
 
-        const wasActive = this.activeStreams.has(container);
         this.activeStreams.delete(container);
-        container.dataset.pendingLoad = 'false';
-        this._removeBadge(container, 'waiting-badge');
 
-        // Jika ada slot baru, coba load yang sedang pending
-        if (wasActive) {
-            this._promotePending();
-            // [Langkah 4] Update indikator
-            this._updateIndicator();
-        }
+        // Update indikator
+        this._updateIndicator();
     },
 
-    // Setelah ada slot kosong, load card pending pertama yang terlihat
-    _promotePending() {
-        const allContainers = document.querySelectorAll('.cctv-video-container');
-        for (const container of allContainers) {
-            if (container.dataset.pendingLoad === 'true') {
-                // Cek apakah masih di viewport
-                const rect = container.getBoundingClientRect();
-                const inViewport = (
-                    rect.top < window.innerHeight &&
-                    rect.bottom > 0 &&
-                    rect.left < window.innerWidth &&
-                    rect.right > 0
-                );
-                if (inViewport) {
-                    this._load(container);
-                    break;
-                }
-            }
-        }
-    },
-
-    // Tampilkan badge "Antrian" di card yang sedang pending
-    _showWaitingBadge(container) {
-        if (container.querySelector('.waiting-badge')) return;
-        const badge = document.createElement('div');
-        badge.className = 'waiting-badge';
-        badge.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Menunggu slot...
-        `;
-        container.appendChild(badge);
-    },
-
-    _removeBadge(container, className) {
-        const badge = container.querySelector(`.${className}`);
-        if (badge) badge.remove();
-    },
-
-    // [Langkah 4] Update tampilan indikator aktif di header control bar
+    // Update tampilan indikator aktif di header control bar
     _updateIndicator() {
         const indicator = document.getElementById('active-stream-indicator');
         if (!indicator) return;
         const active = this.activeStreams.size;
-        const max = this.maxConcurrent;
-        indicator.querySelector('.active-count').textContent = active;
-        indicator.querySelector('.max-count').textContent = max;
 
-        // Warna berubah berdasarkan tingkat penggunaan
+        const activeCountEl = indicator.querySelector('.active-count');
+        const maxCountEl = indicator.querySelector('.max-count');
+        if (activeCountEl) activeCountEl.textContent = active;
+        if (maxCountEl) maxCountEl.textContent = 'hover';
+
+        // Warna berubah berdasarkan jumlah stream aktif
         indicator.className = 'stream-indicator';
-        if (active === max) {
-            indicator.classList.add('full');
-        } else if (active > 0) {
+        if (active > 0) {
             indicator.classList.add('partial');
         }
-    },
-
-    // Ubah batas concurrent dari luar (dipanggil saat user ganti selector)
-    setMaxConcurrent(n) {
-        this.maxConcurrent = n;
-        this._updateIndicator();
-        // Jika batas dinaikkan, promote pending
-        this._promotePending();
-        // Jika batas diturunkan, tidak paksa unload yang sudah jalan
     },
 
     // Unload semua stream (dipanggil saat switch ke Map view)
@@ -207,7 +123,7 @@ const StreamManager = {
         allContainers.forEach(c => this._unload(c));
     },
 
-    // Pasang ulang observer ke semua container yang ada
+    // Pasang ulang hover listener ke semua container yang ada
     reobserveAll() {
         const allContainers = document.querySelectorAll('.cctv-video-container');
         allContainers.forEach(c => this.observe(c));
@@ -222,42 +138,28 @@ document.addEventListener('DOMContentLoaded', function () {
     initViewToggle();
     initFilters();
     initGridLayout();
-    initMaxStreamSelector(); // [Langkah 2] Init selector
 
-    // Inisialisasi StreamManager [Langkah 1]
+    // Inisialisasi StreamManager (hover mode)
     StreamManager.init();
 
-    // Pasang observer ke semua card yang ada
+    // Pasang hover listener ke semua card yang ada
     document.querySelectorAll('.cctv-video-container').forEach(container => {
         StreamManager.observe(container);
     });
 
-    // Update indikator awal [Langkah 4]
+    // Update indikator awal
     StreamManager._updateIndicator();
 
-    // Fetch data via API before initializing map
+    // Fetch data via API before initializing map and display
     fetchCCTVData().then(() => {
         initMap();
+        initDisplayControls();
     });
 
     initKeyboardShortcuts();
 });
 
-// ================================
-// [Langkah 2] Inisialisasi selector Max Live Streams
-// ================================
-function initMaxStreamSelector() {
-    const selector = document.getElementById('max-streams');
-    if (!selector) return;
 
-    // Set default value di selector sesuai StreamManager
-    selector.value = StreamManager.maxConcurrent;
-
-    selector.addEventListener('change', function () {
-        const val = parseInt(this.value, 10);
-        StreamManager.setMaxConcurrent(val);
-    });
-}
 
 // ================================
 // Data Fetching
@@ -268,6 +170,7 @@ async function fetchCCTVData() {
         const result = await response.json();
         if (result.success) {
             cctvData = result.data;
+            filteredCctvData = [...cctvData];
             console.log("CCTV Data Loaded via API:", cctvData);
         } else {
             console.error("Failed to fetch CCTV data:", result.message);
@@ -306,12 +209,14 @@ function initDateTime() {
 }
 
 // ================================
-// View Toggle (Grid/Map)
+// View Toggle (Grid/Map/Display)
 // ================================
 function initViewToggle() {
     const viewBtns = document.querySelectorAll('.view-btn');
     const gridView = document.getElementById('grid-view');
     const mapView = document.getElementById('map-view');
+    const displayView = document.getElementById('display-view');
+    const displayOnlyFilters = document.querySelectorAll('.display-only');
 
     viewBtns.forEach(btn => {
         btn.addEventListener('click', function () {
@@ -325,14 +230,20 @@ function initViewToggle() {
             if (view === 'grid') {
                 gridView.classList.add('active');
                 mapView.classList.remove('active');
+                if (displayView) displayView.classList.remove('active');
+                displayOnlyFilters.forEach(el => el.style.display = 'none');
+                stopDisplayTimer();
 
                 // Re-observe semua container setelah kembali ke grid
                 setTimeout(() => StreamManager.reobserveAll(), 100);
-            } else {
+            } else if (view === 'map') {
                 gridView.classList.remove('active');
                 mapView.classList.add('active');
+                if (displayView) displayView.classList.remove('active');
+                displayOnlyFilters.forEach(el => el.style.display = 'none');
+                stopDisplayTimer();
 
-                // [Langkah 3] Unload semua stream saat pindah ke map view
+                // Unload semua stream saat pindah ke map view
                 StreamManager.unloadAll();
 
                 // Invalidate map size when shown and refit bounds
@@ -348,6 +259,18 @@ function initViewToggle() {
                         }
                     }, 200);
                 }
+            } else if (view === 'display') {
+                gridView.classList.remove('active');
+                mapView.classList.remove('active');
+                if (displayView) displayView.classList.add('active');
+                displayOnlyFilters.forEach(el => el.style.display = '');
+
+                // Unload stream dari Grid View
+                StreamManager.unloadAll();
+
+                // Jalankan Render & Timer
+                displayCurrentPage = 1;
+                renderDisplayView();
             }
 
             currentView = view;
@@ -370,6 +293,14 @@ function initFilters() {
 }
 
 function filterCCTV(kecamatanId) {
+    // 1. Filter untuk array data global (dipakai map dan display)
+    if (kecamatanId === 'all') {
+        filteredCctvData = [...cctvData];
+    } else {
+        filteredCctvData = cctvData.filter(c => c.kecamatan_id.toString() === kecamatanId);
+    }
+
+    // 2. Filter untuk mode Grid Element
     const cards = document.querySelectorAll('.cctv-card');
     let visibleCount = 0;
 
@@ -397,6 +328,12 @@ function filterCCTV(kecamatanId) {
 
     // Update map markers
     updateMapMarkers(kecamatanId);
+
+    // Update display view if active
+    if (currentView === 'display') {
+        displayCurrentPage = 1;
+        renderDisplayView();
+    }
 }
 
 // ================================
@@ -617,7 +554,183 @@ function initKeyboardShortcuts() {
             const mapBtn = document.querySelector('.view-btn[data-view="map"]');
             if (mapBtn) mapBtn.click();
         }
+
+        // B for display view
+        if (e.key === 'b' && !e.ctrlKey && !e.metaKey) {
+            const displayBtn = document.querySelector('.view-btn[data-view="display"]');
+            if (displayBtn) displayBtn.click();
+        }
     });
+}
+
+// ================================
+// Display View Logic (Auto-slide Pagination)
+// ================================
+
+function initDisplayControls() {
+    const itemsInput = document.getElementById('items-per-page');
+    const prevBtn = document.getElementById('display-prev');
+    const nextBtn = document.getElementById('display-next');
+
+    if (itemsInput) {
+        // Init value
+        displayItemsPerPage = parseInt(itemsInput.value) || 9;
+
+        itemsInput.addEventListener('change', function () {
+            let val = parseInt(this.value);
+            if (val < 1) val = 1;
+            if (val > 20) val = 20;
+            this.value = val;
+            displayItemsPerPage = val;
+            displayCurrentPage = 1;
+            if (currentView === 'display') {
+                renderDisplayView();
+            }
+        });
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (displayCurrentPage > 1) {
+                displayCurrentPage--;
+                renderDisplayView();
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const maxPage = Math.ceil(filteredCctvData.length / displayItemsPerPage);
+            if (displayCurrentPage < maxPage) {
+                displayCurrentPage++;
+            } else {
+                displayCurrentPage = 1; // loop back
+            }
+            renderDisplayView();
+        });
+    }
+}
+
+function renderDisplayView() {
+    const grid = document.getElementById('display-grid');
+    const pageInfo = document.getElementById('display-page-info');
+    if (!grid) return;
+
+    // Bersihkan tampilan sebelumnya
+    grid.innerHTML = '';
+    stopDisplayTimer();
+
+    const totalItems = filteredCctvData.length;
+
+    if (totalItems === 0) {
+        pageInfo.textContent = 'Tidak ada CCTV';
+        grid.innerHTML = `
+            <div class="no-data" style="grid-column: 1 / -1;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <p>Belum ada data CCTV di area ini</p>
+            </div>`;
+        return;
+    }
+
+    const totalPages = Math.ceil(totalItems / displayItemsPerPage);
+    if (displayCurrentPage > totalPages) displayCurrentPage = totalPages;
+
+    pageInfo.textContent = `Halaman ${displayCurrentPage} dari ${totalPages}`;
+
+    // Sesuaikan column css pada display-grid agar tampil cantik (akar kuadrat)
+    const cols = Math.ceil(Math.sqrt(displayItemsPerPage));
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+    // Ambil data untuk halaman ini
+    const startIdx = (displayCurrentPage - 1) * displayItemsPerPage;
+    const endIdx = startIdx + displayItemsPerPage;
+    const pageData = filteredCctvData.slice(startIdx, endIdx);
+
+    pageData.forEach(cctv => {
+        // Buat element iframe langsung untuk autoplay mode display
+        const statusClass = cctv.is_active ? 'active' : 'inactive';
+        const statusText = cctv.is_active ? 'Aktif' : 'Tidak Aktif';
+        const cardClass = cctv.is_active ? '' : 'inactive';
+
+        const card = document.createElement('div');
+        card.className = `cctv-card ${cardClass}`;
+        card.innerHTML = `
+            <div class="cctv-video-container popup-video-wrapper">
+                <iframe class="cctv-video" 
+                    src="https://www.youtube-nocookie.com/embed/${cctv.youtube_video_id}?rel=0&autoplay=1&mute=1&modestbranding=1&controls=0&showinfo=0&fs=0" 
+                    title="${escapeHtml(cctv.nama_lokasi)}" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin">
+                </iframe>
+                <div class="cctv-overlay">
+                    <button class="fullscreen-btn" title="Layar Penuh" onclick="openFullscreen(${cctv.id}, '${escapeHtml(cctv.nama_lokasi)}', '${cctv.youtube_video_id}', '${escapeHtml(cctv.kecamatan)}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="cctv-info">
+                <h3 class="cctv-title">${escapeHtml(cctv.nama_lokasi)}</h3>
+                <div class="cctv-meta">
+                    <span class="cctv-location">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        ${escapeHtml(cctv.kecamatan)}
+                    </span>
+                    <span class="cctv-status ${statusClass}">
+                        <span class="status-dot"></span>
+                        ${statusText}
+                    </span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    // Mulai animasi progress bar dan timer
+    startDisplayTimer();
+}
+
+function startDisplayTimer() {
+    stopDisplayTimer(); // Clear past timer
+
+    const progressBar = document.getElementById('display-progress-bar');
+    if (progressBar) {
+        // Reset animation
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+
+        // Use timeout to allow browser to register the 0% state before starting transition
+        setTimeout(() => {
+            progressBar.style.transition = `width ${DISPLAY_DURATION}ms linear`;
+            progressBar.style.width = '100%';
+        }, 50);
+    }
+
+    displayTimer = setTimeout(() => {
+        // Pindah halaman
+        const nextBtn = document.getElementById('display-next');
+        if (nextBtn) nextBtn.click();
+    }, DISPLAY_DURATION);
+}
+
+function stopDisplayTimer() {
+    if (displayTimer) {
+        clearTimeout(displayTimer);
+        displayTimer = null;
+    }
+    const progressBar = document.getElementById('display-progress-bar');
+    if (progressBar) {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+    }
 }
 
 // ================================
