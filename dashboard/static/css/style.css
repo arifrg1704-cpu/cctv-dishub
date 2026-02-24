@@ -552,6 +552,13 @@ body {
     overflow: hidden;
 }
 
+#display-view.is-fullscreen {
+    height: 100vh !important;
+    background-color: var(--bg-primary);
+    z-index: 9999;
+    /* Ensure it stays on top */
+}
+
 #display-view .cctv-grid {
     flex: 1;
     overflow: auto;
@@ -618,6 +625,12 @@ body {
     padding: 14px 24px;
     width: 100%;
     box-sizing: border-box;
+    position: relative;
+}
+
+#display-fullscreen {
+    position: absolute;
+    right: 24px;
 }
 
 #display-view .display-nav-btn {

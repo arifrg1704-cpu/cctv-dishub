@@ -76,12 +76,8 @@ const StreamManager = {
         container.appendChild(iframe);
 
         this.activeStreams.set(container, true);
-
-        // Update indikator
-        this._updateIndicator();
     },
 
-    // Unload iframe dari container
     _unload(container) {
         const iframe = container.querySelector('iframe.cctv-video');
         const placeholder = container.querySelector('.video-placeholder');
@@ -94,27 +90,6 @@ const StreamManager = {
         }
 
         this.activeStreams.delete(container);
-
-        // Update indikator
-        this._updateIndicator();
-    },
-
-    // Update tampilan indikator aktif di header control bar
-    _updateIndicator() {
-        const indicator = document.getElementById('active-stream-indicator');
-        if (!indicator) return;
-        const active = this.activeStreams.size;
-
-        const activeCountEl = indicator.querySelector('.active-count');
-        const maxCountEl = indicator.querySelector('.max-count');
-        if (activeCountEl) activeCountEl.textContent = active;
-        if (maxCountEl) maxCountEl.textContent = 'hover';
-
-        // Warna berubah berdasarkan jumlah stream aktif
-        indicator.className = 'stream-indicator';
-        if (active > 0) {
-            indicator.classList.add('partial');
-        }
     },
 
     // Unload semua stream (dipanggil saat switch ke Map view)
@@ -146,9 +121,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.cctv-video-container').forEach(container => {
         StreamManager.observe(container);
     });
-
-    // Update indikator awal
-    StreamManager._updateIndicator();
 
     // Fetch data via API before initializing map and display
     fetchCCTVData().then(() => {
@@ -593,6 +565,41 @@ function initDisplayControls() {
             }
         });
     }
+
+    const fullscreenBtn = document.getElementById('display-fullscreen');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', () => {
+            const displayView = document.getElementById('display-view');
+            if (!document.fullscreenElement) {
+                if (displayView.requestFullscreen) {
+                    displayView.requestFullscreen();
+                } else if (displayView.webkitRequestFullscreen) {
+                    displayView.webkitRequestFullscreen();
+                } else if (displayView.msRequestFullscreen) {
+                    displayView.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        const displayView = document.getElementById('display-view');
+        if (displayView) {
+            if (document.fullscreenElement) {
+                displayView.classList.add('is-fullscreen');
+            } else {
+                displayView.classList.remove('is-fullscreen');
+            }
+        }
+    });
 
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
