@@ -648,7 +648,7 @@ function renderDisplayView() {
     // Baca kolom dari dropdown Layout (sama seperti Grid View)
     const layoutSelect = document.getElementById('grid-layout');
     const cols = layoutSelect ? parseInt(layoutSelect.value) : 3;
-    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gridTemplateColumns = '';
     grid.dataset.columns = cols;
 
     // Ambil data untuk halaman ini

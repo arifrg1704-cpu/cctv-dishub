@@ -570,7 +570,7 @@ body {
 }
 
 #display-view .cctv-video-container {
-    height: 100% !important;
+    height: auto !important;
     padding-bottom: 0 !important;
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -974,10 +974,13 @@ body {
         gap: 12px;
     }
 
-    .cctv-grid[data-columns="2"],
+    .cctv-grid[data-columns="2"] {
+        grid-template-columns: 1fr;
+    }
+
     .cctv-grid[data-columns="3"],
     .cctv-grid[data-columns="4"] {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .filter-group {
