@@ -256,22 +256,32 @@ function initViewToggle() {
 // ================================
 function initFilters() {
     const kecamatanFilter = document.getElementById('filter-kecamatan');
+    const channelFilter = document.getElementById('filter-channel');
 
     if (kecamatanFilter) {
         kecamatanFilter.addEventListener('change', function () {
             currentFilter = this.value;
-            filterCCTV(currentFilter);
+            filterCCTV();
+        });
+    }
+
+    if (channelFilter) {
+        channelFilter.addEventListener('change', function () {
+            displayChannelFilter = this.value;
+            displayCurrentPage = 1;
+            filterCCTV();
         });
     }
 }
 
-function filterCCTV(kecamatanId) {
+function filterCCTV() {
     // 1. Filter untuk array data global (dipakai map dan display)
-    if (kecamatanId === 'all') {
-        filteredCctvData = [...cctvData];
-    } else {
-        filteredCctvData = cctvData.filter(c => c.kecamatan_id.toString() === kecamatanId);
-    }
+    filteredCctvData = cctvData.filter(c => {
+        const matchesKecamatan = currentFilter === 'all' || c.kecamatan_id.toString() === currentFilter;
+        // Biarkan displayChannelFilter menyaring juga secara global agar sinkron, atau hanya untuk display/grid
+        const matchesChannel = displayChannelFilter === 'all' || c.youtube_channel_id == displayChannelFilter;
+        return matchesKecamatan && matchesChannel;
+    });
 
     // 2. Filter untuk mode Grid Element
     const cards = document.querySelectorAll('.cctv-card');
@@ -279,9 +289,13 @@ function filterCCTV(kecamatanId) {
 
     cards.forEach(card => {
         const cardKecamatan = card.dataset.kecamatan;
+        const cardChannel = card.dataset.channel;
         const container = card.querySelector('.cctv-video-container');
 
-        if (kecamatanId === 'all' || cardKecamatan === kecamatanId) {
+        const matchesKecamatan = currentFilter === 'all' || cardKecamatan === currentFilter;
+        const matchesChannel = displayChannelFilter === 'all' || cardChannel == displayChannelFilter;
+
+        if (matchesKecamatan && matchesChannel) {
             card.style.display = 'block';
             visibleCount++;
             // Re-observe supaya Intersection Observer re-evaluate
@@ -300,7 +314,7 @@ function filterCCTV(kecamatanId) {
     }
 
     // Update map markers
-    updateMapMarkers(kecamatanId);
+    updateMapMarkers();
 
     // Update display view if active
     if (currentView === 'display') {
@@ -444,8 +458,9 @@ function addMapMarkers() {
             className: 'custom-popup'
         });
 
-        // Store kecamatan_id for filtering
+        // Store kecamatan_id & channel_id for filtering
         marker.kecamatanId = cctv.kecamatan_id;
+        marker.channelId = cctv.youtube_channel_id;
 
         marker.addTo(map);
         markers.push(marker);
@@ -463,9 +478,12 @@ function addMapMarkers() {
     }
 }
 
-function updateMapMarkers(kecamatanId) {
+function updateMapMarkers() {
     markers.forEach(marker => {
-        if (kecamatanId === 'all' || marker.kecamatanId.toString() === kecamatanId) {
+        const matchesKecamatan = currentFilter === 'all' || marker.kecamatanId.toString() === currentFilter;
+        const matchesChannel = displayChannelFilter === 'all' || marker.channelId == displayChannelFilter;
+
+        if (matchesKecamatan && matchesChannel) {
             marker.addTo(map);
         } else {
             map.removeLayer(marker);
@@ -546,16 +564,6 @@ function initKeyboardShortcuts() {
 // ================================
 
 function initDisplayControls() {
-    const channelFilter = document.getElementById('filter-channel');
-    if (channelFilter) {
-        channelFilter.addEventListener('change', function () {
-            displayChannelFilter = this.value;
-            displayCurrentPage = 1;
-            if (currentView === 'display') {
-                renderDisplayView();
-            }
-        });
-    }
 
     const itemsInput = document.getElementById('items-per-page');
     const prevBtn = document.getElementById('display-prev');
@@ -624,7 +632,7 @@ function initDisplayControls() {
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            const activeData = filteredCctvData.filter(c => c.is_active && (displayChannelFilter === 'all' || c.youtube_channel_id == displayChannelFilter));
+            const activeData = filteredCctvData.filter(c => c.is_active);
             const maxPage = Math.ceil(activeData.length / displayItemsPerPage);
             if (displayCurrentPage < maxPage) {
                 displayCurrentPage++;
@@ -645,8 +653,8 @@ function renderDisplayView() {
     grid.innerHTML = '';
     stopDisplayTimer();
 
-    // Hanya tampilkan CCTV yang aktif pada mode Display dan filter berdasarkan channel
-    const activeDisplayData = filteredCctvData.filter(c => c.is_active && (displayChannelFilter === 'all' || c.youtube_channel_id == displayChannelFilter));
+    // Hanya tampilkan CCTV yang aktif pada mode Display (Karena filter Global sudah menangani Channel)
+    const activeDisplayData = filteredCctvData.filter(c => c.is_active);
     const totalItems = activeDisplayData.length;
 
     if (totalItems === 0) {

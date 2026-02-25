@@ -59,7 +59,7 @@
                     <option value="3" selected>3 x 3</option>
                     <option value="4">4 x 4</option>
                 </select>
-                <div class="filter-group display-only" style="display: none;">
+                <div class="filter-group">
                     <label for="filter-channel">Channel:</label>
                     <select id="filter-channel" class="filter-select">
                         <option value="all">Semua Channel</option>
@@ -99,8 +99,8 @@
     <div class="cctv-grid" id="cctv-grid" data-columns="3">
         {% for cctv in cctv_list %}
         <div class="cctv-card {% if not cctv.is_active %}inactive{% endif %}" data-id="{{ cctv.id }}"
-            data-kecamatan="{{ cctv.kecamatan.id }}" data-lat="{{ cctv.latitude|unlocalize }}"
-            data-lng="{{ cctv.longitude|unlocalize }}">
+            data-kecamatan="{{ cctv.kecamatan.id }}" data-channel="{{ cctv.youtube_channel_id }}"
+            data-lat="{{ cctv.latitude|unlocalize }}" data-lng="{{ cctv.longitude|unlocalize }}">
             <div class="cctv-video-container" data-video-id="{{ cctv.youtube_video_id }}"
                 data-title="{{ cctv.nama_lokasi }}">
                 <div class="video-placeholder" onclick="loadVideo(this.parentElement)">
