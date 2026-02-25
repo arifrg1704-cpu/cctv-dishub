@@ -612,7 +612,8 @@ function initDisplayControls() {
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            const maxPage = Math.ceil(filteredCctvData.length / displayItemsPerPage);
+            const activeData = filteredCctvData.filter(c => c.is_active);
+            const maxPage = Math.ceil(activeData.length / displayItemsPerPage);
             if (displayCurrentPage < maxPage) {
                 displayCurrentPage++;
             } else {
@@ -632,7 +633,9 @@ function renderDisplayView() {
     grid.innerHTML = '';
     stopDisplayTimer();
 
-    const totalItems = filteredCctvData.length;
+    // Hanya tampilkan CCTV yang aktif pada mode Display
+    const activeDisplayData = filteredCctvData.filter(c => c.is_active);
+    const totalItems = activeDisplayData.length;
 
     if (totalItems === 0) {
         pageInfo.textContent = 'Tidak ada CCTV';
@@ -642,7 +645,7 @@ function renderDisplayView() {
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                     <circle cx="12" cy="13" r="4"></circle>
                 </svg>
-                <p>Belum ada data CCTV di area ini</p>
+                <p>Belum ada data CCTV aktif di area ini</p>
             </div>`;
         return;
     }
@@ -661,7 +664,7 @@ function renderDisplayView() {
     // Ambil data untuk halaman ini
     const startIdx = (displayCurrentPage - 1) * displayItemsPerPage;
     const endIdx = startIdx + displayItemsPerPage;
-    const pageData = filteredCctvData.slice(startIdx, endIdx);
+    const pageData = activeDisplayData.slice(startIdx, endIdx);
 
     pageData.forEach(cctv => {
         // Buat element iframe langsung untuk autoplay mode display
