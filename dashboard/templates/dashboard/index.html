@@ -60,6 +60,15 @@
                     <option value="4">4 x 4</option>
                 </select>
                 <div class="filter-group display-only" style="display: none;">
+                    <label for="filter-channel">Channel:</label>
+                    <select id="filter-channel" class="filter-select">
+                        <option value="all">Semua Channel</option>
+                        {% for channel in youtube_channel_list %}
+                        <option value="{{ channel.id }}">{{ channel.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group display-only" style="display: none;">
                     <label for="items-per-page">CCTV/Halaman:</label>
                     <input type="number" id="items-per-page" class="filter-select" style="width: 70px;" min="1" max="20"
                         value="9">

@@ -18,6 +18,7 @@ let displayItemsPerPage = 9;
 let displayTimer = null;
 const DISPLAY_DURATION = 300000; // 5 menit
 let filteredCctvData = []; // Menyimpan data yang sudah difilter kecamatan
+let displayChannelFilter = 'all'; // Menyimpan data channel untuk display
 
 // ================================
 // Stream Manager (Hover-to-Play)
@@ -545,6 +546,17 @@ function initKeyboardShortcuts() {
 // ================================
 
 function initDisplayControls() {
+    const channelFilter = document.getElementById('filter-channel');
+    if (channelFilter) {
+        channelFilter.addEventListener('change', function () {
+            displayChannelFilter = this.value;
+            displayCurrentPage = 1;
+            if (currentView === 'display') {
+                renderDisplayView();
+            }
+        });
+    }
+
     const itemsInput = document.getElementById('items-per-page');
     const prevBtn = document.getElementById('display-prev');
     const nextBtn = document.getElementById('display-next');
@@ -612,7 +624,7 @@ function initDisplayControls() {
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            const activeData = filteredCctvData.filter(c => c.is_active);
+            const activeData = filteredCctvData.filter(c => c.is_active && (displayChannelFilter === 'all' || c.youtube_channel_id == displayChannelFilter));
             const maxPage = Math.ceil(activeData.length / displayItemsPerPage);
             if (displayCurrentPage < maxPage) {
                 displayCurrentPage++;
@@ -633,8 +645,8 @@ function renderDisplayView() {
     grid.innerHTML = '';
     stopDisplayTimer();
 
-    // Hanya tampilkan CCTV yang aktif pada mode Display
-    const activeDisplayData = filteredCctvData.filter(c => c.is_active);
+    // Hanya tampilkan CCTV yang aktif pada mode Display dan filter berdasarkan channel
+    const activeDisplayData = filteredCctvData.filter(c => c.is_active && (displayChannelFilter === 'all' || c.youtube_channel_id == displayChannelFilter));
     const totalItems = activeDisplayData.length;
 
     if (totalItems === 0) {

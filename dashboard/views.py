@@ -5,7 +5,7 @@ Views untuk Dashboard CCTV Lalu Lintas Kota Pontianak
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .models import CCTV, Kecamatan
+from .models import CCTV, Kecamatan, YoutubeChannel
 
 
 def index(request):
@@ -16,10 +16,12 @@ def index(request):
     # Ambil data untuk template (semua CCTV, termasuk yang tidak aktif)
     cctv_list = CCTV.objects.all().select_related('kecamatan')
     kecamatan_list = Kecamatan.objects.all()
+    youtube_channel_list = YoutubeChannel.objects.all()
     
     context = {
         'cctv_list': cctv_list,
         'kecamatan_list': kecamatan_list,
+        'youtube_channel_list': youtube_channel_list,
         'total_cctv': cctv_list.count(),
         'total_kecamatan': kecamatan_list.count(),
     }
@@ -53,6 +55,7 @@ def api_cctv_list(request):
             'longitude': float(cctv.longitude) if cctv.longitude else None,
             'is_active': cctv.is_active,
             'deskripsi': cctv.deskripsi or '',
+            'youtube_channel_id': cctv.youtube_channel_id,
         })
     
     return JsonResponse({
