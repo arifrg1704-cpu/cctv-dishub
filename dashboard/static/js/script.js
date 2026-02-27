@@ -673,7 +673,7 @@ function renderDisplayView() {
     const totalPages = Math.ceil(totalItems / displayItemsPerPage);
     if (displayCurrentPage > totalPages) displayCurrentPage = totalPages;
 
-    pageInfo.textContent = `Halaman ${displayCurrentPage} dari ${totalPages}`;
+    pageInfo.textContent = `${displayCurrentPage} / ${totalPages}`;
 
     // Baca kolom dari dropdown Layout (sama seperti Grid View)
     const layoutSelect = document.getElementById('grid-layout');
